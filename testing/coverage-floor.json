@@ -1,0 +1,8 @@
+{
+  "schema": 1,
+  "packages": {
+    "github.com/beamfall/plugin-photos": 90.0,
+    "github.com/beamfall/plugin-photos/internal/exif": 80.0,
+    "github.com/beamfall/plugin-photos/internal/geocode": 90.0
+  }
+}
