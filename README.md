@@ -4,42 +4,39 @@
 
 # Beamfall Photos
 
-**Your photo folders, turned into a browsable library, without anything leaving your server.**
-Beamfall Photos is the plugin that gives [Beamfall Core](https://github.com/beamfall/core) its
-photo experience. Point a Beamfall library at the folders you already keep, and Photos reads each
+Beamfall Photos is the photo plugin for [Beamfall Core](https://github.com/beamfall/core). Point a Beamfall library at the folders you already keep, and Photos reads each
 picture's own metadata to sort it by when it was taken, group it into albums, and label where it
 was taken. It works offline, needs no configuration, and calls no outside service.
 
 It is free and open source under [AGPL-3.0](LICENSE).
 
-## What you get
+## Features
 
-- **Albums from the folders you already have.** Each folder becomes an Album, and the photos in it
+- Each folder becomes an Album, and the photos in it
   sort by the moment they were taken.
-- **Capture times you can trust.** Photos reads the EXIF capture time and keeps the time zone it
+- Photos reads the EXIF capture time and keeps the time zone it
   was taken in, from the camera's offset tag or from the GPS clock. Albums shot across time zones
-  still sort in true order. When a photo has no usable EXIF date, it falls back to the file's
-  modification time and flags the time as inferred, so the photo stays in your library instead of
-  disappearing.
-- **Places, worked out offline.** GPS coordinates become a coarse place name such as
+  still sort in the order they were taken. When a photo has no usable EXIF date, it falls back to the file's
+  modification time and flags the time as inferred, so the photo stays in your library.
+- GPS coordinates become a coarse place name such as
   "Paris, France", using a city table bundled with the plugin. Your locations are never sent to a
-  geocoding service. Photos with no GPS data simply have no place.
-- **RAW files as well as JPEG.** The EXIF reader handles JPEG and TIFF-based RAW formats (CR2, NEF,
+  geocoding service. Photos with no GPS data have no place.
+- The EXIF reader handles JPEG and TIFF-based RAW formats (CR2, NEF,
   NRW, ARW, DNG, ORF, RW2, PEF, SRW, 3FR), Fujifilm RAF, and Canon CR3. It picks up capture time,
   camera make and model, pixel dimensions, orientation, and GPS.
-- **A home screen built for photos.** All Photos, Albums, Places, On This Day, and Recently Added.
+- The home screen has All Photos, Albums, Places, On This Day, and Recently Added.
   The Places grid stays hidden when a library has no GPS data.
-- **Search that knows photos.** Capture time, camera make, camera model, album, and place are all
+- Capture time, camera make, camera model, album, and place are all
   searchable, and you can filter by place.
-- **Bring your Immich albums.** Import album membership and order from a saved response of
+- You can import album membership and order from a saved response of
   Immich's `GET /albums` API. Only album names and their photos are read; everything else in the
   file is ignored.
-- **Made for viewing, not resuming.** Photos play as a slideshow, so Beamfall does not track a
+- Photos play as a slideshow, so Beamfall does not track a
   resume position for them.
-- **Careful with your files.** The EXIF reader is small and has no dependencies. It reads only a
+- The EXIF reader is small and has no dependencies. It reads only a
   bounded slice of each file, never decodes pixels, and is fuzz tested. A damaged or unusual file
-  produces empty metadata, not an error.
-- **English and French** labels out of the box.
+  produces empty metadata instead of an error.
+- Labels are available in English and French.
 
 ## How it fits into Beamfall
 
@@ -67,7 +64,7 @@ script/gate.sh fuzz    # a bounded fuzz run of the EXIF reader
 ```
 
 [`conformance_test.go`](conformance_test.go) runs the SDK's `sdktest` conformance harness against
-`Bundle()` and the extraction hook. CI runs the same checks on every push and pull request; see
+`Bundle()` and the extraction hook. CI runs the same checks on every pull request and every push to `main`; see
 [`.github/workflows/conformance.yml`](.github/workflows/conformance.yml).
 
 ## Contributing
