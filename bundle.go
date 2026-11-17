@@ -29,7 +29,7 @@ func Bundle() sdk.Bundle {
 		ID:          PluginID,
 		Version:     "0.1.4",
 		SDKFloor:    "0.4.0",
-		SDKCeiling:  "0.4.0",
+		SDKCeiling:  "0.4.1",
 		DisplayName: sdk.LocaleString{"en": "Photos", "fr": "Photos"},
 		// A Photo is Media — display label only, never a schema identifier.
 		MediaLabel:   sdk.LocaleString{"en": "Photo", "fr": "Photo"},
