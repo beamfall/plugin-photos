@@ -2,7 +2,9 @@ package exif
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -289,5 +291,23 @@ func TestReadCR3BoxSizeForms(t *testing.T) {
 	}
 	if !md.CaptureTime.Equal(rawCaptureTime) {
 		t.Errorf("capture = %v, want %v", md.CaptureTime, rawCaptureTime)
+	}
+}
+
+type failingReader struct{}
+
+func (failingReader) Read([]byte) (int, error) { return 0, errors.New("disk gone") }
+
+func TestReadSurfacesSignatureReadFailure(t *testing.T) {
+	if _, err := Read(failingReader{}); err == nil {
+		t.Fatal("Read of a failing stream returned nil error")
+	}
+}
+
+func TestReadContextAbortsCancelledContainerRead(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if _, err := ReadContext(ctx, bytes.NewReader(buildCR3())); !errors.Is(err, context.Canceled) {
+		t.Fatalf("ReadContext(cancelled) error = %v, want context.Canceled", err)
 	}
 }

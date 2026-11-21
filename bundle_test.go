@@ -78,10 +78,26 @@ func TestBundleAdmitsCameraRollVideoBesidePhotos(t *testing.T) {
 	}
 }
 
-// Video is admitted but carries no EXIF: the exif hook stays image-only.
-func TestExifHookStillRefusesVideo(t *testing.T) {
-	_, err := New().ExtractLocal(context.Background(), "video", t.TempDir(), "clip.mov")
+// Video is admitted but carries no EXIF: the hook still refuses other classes
+// and reads a clip's capture date from its mtime.
+func TestExifHookRefusesOtherClassesAndDatesVideo(t *testing.T) {
+	_, err := New().ExtractLocal(context.Background(), "audio", t.TempDir(), "clip.m4a")
 	if !errors.Is(err, ErrNotImageClass) {
-		t.Fatalf("ExtractLocal(video) error = %v, want ErrNotImageClass", err)
+		t.Fatalf("ExtractLocal(audio) error = %v, want ErrNotImageClass", err)
+	}
+	root := t.TempDir()
+	path := filepath.Join(root, "Trip", "clip.mov")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte("not exif"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	result, err := New().ExtractLocal(context.Background(), "video", root, path)
+	if err != nil {
+		t.Fatalf("ExtractLocal(video) error = %v", err)
+	}
+	if result.Fields["capture_date"] == nil || !result.CaptureTimeFromMtime {
+		t.Fatalf("video result = %+v, want mtime capture_date", result)
 	}
 }

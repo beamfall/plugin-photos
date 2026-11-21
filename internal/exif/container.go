@@ -2,7 +2,9 @@ package exif
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
+	"errors"
 	"io"
 )
 
@@ -32,11 +34,16 @@ var containerFormats = []containerFormat{
 
 // peekSignature reads the stream's first bytes and returns them with a reader
 // that replays them ahead of the rest of the stream.
-func peekSignature(r io.Reader) (head []byte, stream io.Reader) {
+// A stream shorter than the signature is not an error (it simply matches no
+// container); any other read failure is returned.
+func peekSignature(r io.Reader) (head []byte, stream io.Reader, err error) {
 	buf := make([]byte, signatureBytes)
-	n, _ := io.ReadFull(r, buf)
+	n, err := io.ReadFull(r, buf)
+	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+		err = nil
+	}
 	head = buf[:n]
-	return head, io.MultiReader(bytes.NewReader(head), r)
+	return head, io.MultiReader(bytes.NewReader(head), r), err
 }
 
 // containerParser returns the parser for the RAW container head opens, or nil.
@@ -49,14 +56,32 @@ func containerParser(head []byte) func([]byte) Metadata {
 	return nil
 }
 
-// readContainer parses a bounded prefix of a RAW container. A read failure
-// degrades to zero metadata, like a JPEG with no readable Exif segment.
-func readContainer(r io.Reader, parse func([]byte) Metadata) Metadata {
-	prefix, err := io.ReadAll(io.LimitReader(r, maxContainerMetadataBytes))
-	if err != nil {
-		return Metadata{}
+// ctxReader fails reads once its context is done, so a long container read
+// observes cancellation between chunks.
+type ctxReader struct {
+	ctx context.Context
+	r   io.Reader
+}
+
+func (c ctxReader) Read(p []byte) (int, error) {
+	if err := c.ctx.Err(); err != nil {
+		return 0, err
 	}
-	return parse(prefix)
+	return c.r.Read(p)
+}
+
+// readContainer parses a bounded prefix of a RAW container. A cancelled
+// context aborts the read; any other read failure degrades to zero metadata,
+// like a JPEG with no readable Exif segment.
+func readContainer(ctx context.Context, r io.Reader, parse func([]byte) Metadata) (Metadata, error) {
+	prefix, err := io.ReadAll(io.LimitReader(ctxReader{ctx: ctx, r: r}, maxContainerMetadataBytes))
+	if err != nil {
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return Metadata{}, ctxErr
+		}
+		return Metadata{}, nil
+	}
+	return parse(prefix), nil
 }
 
 // isTIFFContainer matches a TIFF header, which CR2, NEF, NRW, ARW, DNG, ORF,
@@ -134,22 +159,19 @@ func walkGPSTIFF(tiff []byte, md *Metadata) {
 
 // canonMetadataBox returns the children of moov's Canon metadata uuid box.
 func canonMetadataBox(moov []byte) []byte {
-	for _, box := range isoBoxes(moov) {
-		if box.kind == "uuid" && bytes.HasPrefix(box.body, canonMetadataUUID) {
-			return box.body[len(canonMetadataUUID):]
-		}
+	box, ok := isoFind(moov, func(box isoEntry) bool {
+		return box.kind == "uuid" && bytes.HasPrefix(box.body, canonMetadataUUID)
+	})
+	if !ok {
+		return nil
 	}
-	return nil
+	return box.body[len(canonMetadataUUID):]
 }
 
 // isoChild returns the body of the first box of the given type in buf.
 func isoChild(buf []byte, kind string) []byte {
-	for _, box := range isoBoxes(buf) {
-		if box.kind == kind {
-			return box.body
-		}
-	}
-	return nil
+	box, _ := isoFind(buf, func(box isoEntry) bool { return box.kind == kind })
+	return box.body
 }
 
 // isoEntry is one ISOBMFF box: its four-character type and its body.
@@ -158,16 +180,18 @@ type isoEntry struct {
 	body []byte
 }
 
-// isoBoxes splits buf into its sequence of top-level boxes, stopping at the
-// first malformed header.
-func isoBoxes(buf []byte) []isoEntry {
-	var boxes []isoEntry
+// isoFind walks buf's top-level boxes and returns the first one match accepts,
+// stopping there or at the first malformed header.
+func isoFind(buf []byte, match func(isoEntry) bool) (isoEntry, bool) {
 	for {
 		kind, end, header, ok := isoBoxHeader(buf)
 		if !ok {
-			return boxes
+			return isoEntry{}, false
 		}
-		boxes = append(boxes, isoEntry{kind: kind, body: buf[header:end]})
+		box := isoEntry{kind: kind, body: buf[header:end]}
+		if match(box) {
+			return box, true
+		}
 		buf = buf[end:]
 	}
 }

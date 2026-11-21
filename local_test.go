@@ -324,7 +324,7 @@ func TestExtractLocalCorruptEXIFDegradesToMtime(t *testing.T) {
 
 func TestExtractLocalGatedToImageClass(t *testing.T) {
 	fixture := writeJPEGFixture(t)
-	for _, class := range []string{"video", "audio", ""} {
+	for _, class := range []string{"audio", ""} {
 		_, err := New().ExtractLocal(context.Background(), class, "", fixture)
 		if !errors.Is(err, ErrNotImageClass) {
 			t.Errorf("class %q: err = %v, want ErrNotImageClass", class, err)

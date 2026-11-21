@@ -16,8 +16,10 @@ func FuzzReadEXIF(f *testing.F) {
 	}, nil, nil))
 	f.Add(valid)
 	f.Add(rawBigEndianTIFF())
-	f.Add(buildRAF(valid))
-	f.Add(buildCR3())
+	raf := buildRAF(valid)
+	cr3 := buildCR3()
+	f.Add(raf)
+	f.Add(cr3)
 
 	f.Fuzz(func(t *testing.T, data []byte) {
 		if len(data) > maxJPEGMetadataBytes+1 {
@@ -36,6 +38,12 @@ func FuzzReadEXIF(f *testing.F) {
 		}
 		if bytes.Equal(data, valid) && got.Orientation != 6 {
 			t.Fatalf("valid EXIF seed lost orientation: %+v", got)
+		}
+		if bytes.Equal(data, raf) && got.Orientation != 6 {
+			t.Fatalf("valid RAF seed lost orientation: %+v", got)
+		}
+		if bytes.Equal(data, cr3) && got.CaptureTime.IsZero() {
+			t.Fatalf("valid CR3 seed lost capture time: %+v", got)
 		}
 	})
 }

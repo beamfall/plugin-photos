@@ -12,9 +12,12 @@ import (
 	"github.com/beamfall/plugin-photos/internal/geocode"
 )
 
-const imageMediaClass = "image"
+const (
+	imageMediaClass = "image"
+	videoMediaClass = "video"
+)
 
-var ErrNotImageClass = errors.New("photos: exif hook is gated to image-class Media")
+var ErrNotImageClass = errors.New("photos: local metadata hook is gated to image and video Media")
 
 type LocalMetadata struct {
 	Fields             map[string]any
@@ -54,15 +57,20 @@ func newWithGeocoder(g Geocoder) *LocalExtractor {
 }
 
 func (e *LocalExtractor) ExtractLocal(ctx context.Context, class, root, path string) (LocalMetadata, error) {
-	if class != imageMediaClass {
+	if class != imageMediaClass && class != videoMediaClass {
 		return LocalMetadata{}, fmt.Errorf("%w: got class %q", ErrNotImageClass, class)
 	}
 	if err := ctx.Err(); err != nil {
 		return LocalMetadata{}, err
 	}
-	md, err := exif.ReadFileContext(ctx, path)
-	if err != nil {
-		return LocalMetadata{}, fmt.Errorf("photos: read exif: %w", err)
+	// A camera-roll clip carries no EXIF this reader decodes, so it keeps the
+	// file-mtime capture date and its folder album.
+	var md exif.Metadata
+	if class == imageMediaClass {
+		var err error
+		if md, err = exif.ReadFileContext(ctx, path); err != nil {
+			return LocalMetadata{}, fmt.Errorf("photos: read exif: %w", err)
+		}
 	}
 	if err := ctx.Err(); err != nil {
 		return LocalMetadata{}, err

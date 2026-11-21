@@ -1,0 +1,3 @@
+- [x] Surface signature read errors, cancel RAW reads, stop isoBoxes at first match
+- [x] Fuzz seeds assert values
+- [x] Hook accepts video class

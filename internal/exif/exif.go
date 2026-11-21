@@ -114,9 +114,12 @@ func ReadContext(ctx context.Context, r io.Reader) (Metadata, error) {
 	if err := ctx.Err(); err != nil {
 		return Metadata{}, err
 	}
-	head, stream := peekSignature(r)
+	head, stream, err := peekSignature(r)
+	if err != nil {
+		return Metadata{}, err
+	}
 	if parse := containerParser(head); parse != nil {
-		return readContainer(stream, parse), nil
+		return readContainer(ctx, stream, parse)
 	}
 	payload, err := jpegExifSegmentContext(ctx, stream)
 	if err != nil {
