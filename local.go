@@ -66,7 +66,11 @@ func (e *LocalExtractor) ExtractLocal(ctx context.Context, class, root, path str
 	// A camera-roll clip carries no EXIF this reader decodes, so it keeps the
 	// file-mtime capture date and its folder album.
 	var md exif.Metadata
-	if class == imageMediaClass {
+	if class == videoMediaClass {
+		if _, err := os.Stat(path); err != nil {
+			return LocalMetadata{}, fmt.Errorf("photos: stat clip: %w", err)
+		}
+	} else {
 		var err error
 		if md, err = exif.ReadFileContext(ctx, path); err != nil {
 			return LocalMetadata{}, fmt.Errorf("photos: read exif: %w", err)
@@ -77,7 +81,10 @@ func (e *LocalExtractor) ExtractLocal(ctx context.Context, class, root, path str
 	}
 	place := e.resolvePlace(md)
 	captureTime, fromMtime := resolveCaptureTime(md.CaptureTime, path)
-	implied := map[string]string{"media.class": "photo"}
+	implied := map[string]string{}
+	if class == imageMediaClass {
+		implied["media.class"] = "photo"
+	}
 	if !captureTime.IsZero() {
 		implied["media.capture-time"] = captureTime.UTC().Format(time.RFC3339)
 	}
