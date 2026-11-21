@@ -28,8 +28,8 @@ func Bundle() sdk.Bundle {
 	return sdk.Bundle{
 		ID:          PluginID,
 		Version:     "0.1.4",
-		SDKFloor:    "0.4.6",
-		SDKCeiling:  "0.4.6",
+		SDKFloor:    "0.4.7",
+		SDKCeiling:  "0.4.7",
 		DisplayName: sdk.LocaleString{"en": "Photos", "fr": "Photos"},
 		// A Photo is Media — display label only, never a schema identifier.
 		MediaLabel:   sdk.LocaleString{"en": "Photo", "fr": "Photo"},
@@ -78,20 +78,22 @@ func Bundle() sdk.Bundle {
 				// default chronological sort. Album membership is derived from
 				// directory structure by default (directory = Album);
 				// reorganization is a Manager concern.
-				Name:            "album",
-				DisplayName:     sdk.LocaleString{"en": "Album", "fr": "Album"},
-				Archetype:       "container",
-				OrderedChildren: true,
-				Relations:       []sdk.RelationSpec{{Name: "contains", ToKind: sdk.MediaKindName}},
+				Name:              "album",
+				DisplayName:       sdk.LocaleString{"en": "Album", "fr": "Album"},
+				PluralDisplayName: sdk.LocaleString{"en": "Albums", "fr": "Albums"},
+				Archetype:         "container",
+				OrderedChildren:   true,
+				Relations:         []sdk.RelationSpec{{Name: "contains", ToKind: sdk.MediaKindName}},
 			},
 			{
 				// Derived from EXIF GPS, geocoded to a coarse place name. Flat — a Photo belongs to zero or one
 				// Location; no place hierarchy (the geocoder yields one
 				// "near City, Country" string, not a tree).
-				Name:        "location",
-				DisplayName: sdk.LocaleString{"en": "Place", "fr": "Lieu"},
-				Archetype:   "category",
-				Relations:   []sdk.RelationSpec{{Name: "located-in", ToKind: sdk.MediaKindName, Cardinality: "one"}},
+				Name:              "location",
+				DisplayName:       sdk.LocaleString{"en": "Place", "fr": "Lieu"},
+				PluralDisplayName: sdk.LocaleString{"en": "Places", "fr": "Lieux"},
+				Archetype:         "category",
+				Relations:         []sdk.RelationSpec{{Name: "located-in", ToKind: sdk.MediaKindName, Cardinality: "one"}},
 			},
 		},
 		// Home Layout. Each section maps to the fixed core Source vocabulary:
