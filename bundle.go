@@ -2,7 +2,8 @@
 // declarative contribution against Core's fixed plugin vocabularies — Entity
 // Kinds, a home Layout, an Immich album importer, and an EXIF scraper. It adds
 // no schema and no query strings; the image MediaClass it leans on
-// (direct-bytes playback, no transcode) already lives in Core, and its
+// (direct-bytes playback, no transcode) already lives in Core, as does the video
+// class that admits camera-roll clips (CORE-2977), and its
 // local-file EXIF reader + offline geocoder live in this plugin's compiled hook
 // layer.
 //
@@ -33,7 +34,7 @@ func Bundle() sdk.Bundle {
 		DisplayName: sdk.LocaleString{"en": "Photos", "fr": "Photos"},
 		// A Photo is Media — display label only, never a schema identifier.
 		MediaLabel:   sdk.LocaleString{"en": "Photo", "fr": "Photo"},
-		MediaClasses: []string{"image"},
+		MediaClasses: []string{"image", "video"},
 		// Photos do not resume — playback is a client-side slideshow with no
 		// canonical timeline and no resume position. Engagement events are not
 		// recorded for photo viewing; the no-resume posture here is the
